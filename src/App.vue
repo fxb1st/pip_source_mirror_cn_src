@@ -20,8 +20,8 @@ const mirrors = [
     name: '中国科学技术大学镜像站'
   },
   {
-    url: 'http://pypi.douban.com/simple/',
-    name: '豆瓣镜像站'
+    url: 'https://mirrors.cloud.tencent.com/pypi/simple/',
+    name: '腾讯云镜像站'
   },
   {
     url: 'https://mirror.sjtu.edu.cn/pypi/web/simple/',
