@@ -70,10 +70,6 @@ const mirrors = [
   {
     url: 'https://mirror.sjtu.edu.cn/pypi/web/simple/',
     name: '上海交通大学镜像站'
-  },
-  {
-    url: 'http://pypi.hustunique.com/simple/',
-    name: '华中科技大学镜像站'
   }
 ]
 
