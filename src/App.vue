@@ -1,16 +1,60 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 
 const packageName = ref('')
 const showCopyMessage = ref(false)
 const usedPackages = ref([])
 const isDarkMode = ref(false)
 const defaultPackages = ['pandas', 'numpy', 'requests', 'pillow', 'flask']
+const showSuggestions = ref(false)
+const selectedIndex = ref(-1)
+
+// 根据输入筛选建议
+const suggestions = computed(() => {
+  if (!packageName.value) return []
+  return usedPackages.value.filter(pkg => 
+    pkg.toLowerCase().includes(packageName.value.toLowerCase()) &&
+    pkg !== packageName.value
+  )
+})
+
+// 处理键盘事件
+const handleKeydown = (e) => {
+  if (!suggestions.value.length) return
+  
+  switch(e.key) {
+    case 'ArrowDown':
+      e.preventDefault()
+      selectedIndex.value = (selectedIndex.value + 1) % suggestions.value.length
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      selectedIndex.value = selectedIndex.value <= 0 ? suggestions.value.length - 1 : selectedIndex.value - 1
+      break
+    case 'Enter':
+      if (selectedIndex.value >= 0) {
+        e.preventDefault()
+        packageName.value = suggestions.value[selectedIndex.value]
+        showSuggestions.value = false
+      }
+      break
+    case 'Escape':
+      showSuggestions.value = false
+      break
+  }
+}
+
+const handleInput = () => {
+  selectedIndex.value = -1
+  showSuggestions.value = true
+}
+
+const selectSuggestion = (suggestion) => {
+  packageName.value = suggestion
+  showSuggestions.value = false
+}
+
 const mirrors = [
-  {
-    url: 'https://pypi.tuna.tsinghua.edu.cn/simple',
-    name: '清华大学开源软件镜像站'
-  },
   {
     url: 'https://mirrors.aliyun.com/pypi/simple',
     name: '阿里云镜像站'
@@ -119,13 +163,29 @@ onMounted(() => {
     </div>
 
     <div class="search-bar">
-      <input 
-        type="text" 
-        v-model="packageName" 
-        placeholder="输入pip包名称"
-        class="package-input"
-        @focus="$event.target.select()"
-      >
+      <div class="input-wrapper">
+        <input 
+          type="text" 
+          v-model="packageName" 
+          placeholder="输入pip包名称"
+          class="package-input"
+          @focus="$event.target.select()"
+          @input="handleInput"
+          @keydown="handleKeydown"
+          @blur="setTimeout(() => showSuggestions = false, 200)"
+        >
+        <div class="suggestions" v-if="showSuggestions && suggestions.length">
+          <div
+            v-for="(suggestion, index) in suggestions"
+            :key="suggestion"
+            class="suggestion-item"
+            :class="{ 'selected': index === selectedIndex }"
+            @click="selectSuggestion(suggestion)"
+          >
+            {{ suggestion }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="quick-packages" v-if="usedPackages.length">
@@ -177,6 +237,10 @@ onMounted(() => {
   --hover-bg: #e0e0e0;
   --primary-color: #42b883;
   --secondary-text: #666;
+  --theme-transition: background-color 0.5s ease,
+                     color 0.5s ease,
+                     border-color 0.5s ease,
+                     box-shadow 0.5s ease;
 }
 
 .dark-mode {
@@ -193,7 +257,11 @@ onMounted(() => {
 body {
   background-color: var(--bg-color);
   color: var(--text-color);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: var(--theme-transition);
+}
+
+* {
+  transition: var(--theme-transition);
 }
 </style>
 
@@ -209,11 +277,24 @@ body {
   cursor: pointer;
   opacity: 0.7;
   transition: all 0.3s ease;
+  transform-origin: center;
+  animation: fadeIn 0.5s ease;
 }
 
 .theme-toggle:hover {
   opacity: 1;
-  transform: scale(1.1);
+  transform: scale(1.1) rotate(360deg);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) rotate(-180deg);
+  }
+  to {
+    opacity: 0.7;
+    transform: scale(1) rotate(0);
+  }
 }
 
 .container {
@@ -387,5 +468,37 @@ pre {
   font-size: 1rem;
   line-height: 1.5;
   margin: 0;
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+  background-color: var(--hover-bg);
+  color: var(--primary-color);
 }
 </style>
